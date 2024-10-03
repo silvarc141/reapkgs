@@ -1,11 +1,11 @@
->[!Important]
->This is very early work in progress - highly unstable.
+>[!Warning]
+>Unstable software, attribute names are subject to change
 
-# Reapkgs
+# reapkgs
 
-## Nix repackaging of [Reapack](https://reapack.com) repos
+## Nix repackaging of [ReaPack](https://reapack.com) repos
 
 ## Huge thanks to:
 
-- [Reapack by cfillion](https://github.com/cfillion/reapack)
+- [ReaPack by cfillion](https://github.com/cfillion/reapack)
 - [firefox-addons by rycee](https://gitlab.com/rycee/nur-expressions/-/blob/master/pkgs/firefox-addons)
