@@ -142,8 +142,6 @@ output_directory="./generated"
 index_urls_path="" # if empty uses indexes from known repos
 hash_data_path="" # if empty writes and reades from a temporary file
 
-index_output_subdir="$output_directory/reapack-packages"
-
 while getopts "o:i:d:gprh" opt; do
   case $opt in
     h) print_help; exit 0 ;;
@@ -165,6 +163,8 @@ if [ $# -eq 0 ]; then
   print_help
   exit 0
 fi
+
+index_output_subdir="$output_directory/reapack-packages"
 
 index_urls=()
 if [ -n "$index_urls_path" ]; then
