@@ -224,7 +224,7 @@ if [ "$prefetch_hashes" = true ]; then
   export -f prefetch_hash
   export -f sanitize_name
 
-  find "$output_directory" -name "*.nix" -print0 |
+  find "$index_output_subdir" -name "*.nix" ! -name "default.nix" -print0 |
   xargs -0 grep 'url = ' -H |
   sed 's|\(.*\):.*url = "\(.*\)";|\1\|\2|' |
   while IFS= read -r line; do
