@@ -13,7 +13,39 @@ reapkgs is NOT meant to replace ReaPack itself. The project supports only a smal
 
 ## How to use
 
-TODO
+1. Add to flake inputs
+```nix
+# in flake.nix
+
+{
+  inputs = {
+    # ...
+    reapkgs-known.url = "github:silvarc141/reapkgs-known";
+    reapkgs-known.inputs.nixpkgs.follows = "nixpkgs-unstable";
+  };
+}
+```
+2. Use with home-manager
+```nix
+# in home.nix
+
+xdg.configFile.REAPER = {
+  # join all packages in REAPER config path to preserve correct directory structure
+  recursive = true;
+  source = pkgs.symlinkJoin {
+    name = "reapkgs";
+    paths = with inputs.reapkgs-known.packages.${pkgs.system}; [
+      # add packages
+      reateam-extensions.reaper-oss-sws-ext-2-14-0-3
+      (with saike-tools; [
+        saike-yutani-jsfx-0-101
+        squashman-jsfx-0-85
+        saike-abyss-jsfx-0-05
+      ])
+    ];
+  };
+};
+```
 
 ## Made possible thanks to:
 
