@@ -33,9 +33,7 @@
       inherit name;
       paths = [script] ++ elem.dependencies;
       buildInputs = [pkgs.makeWrapper];
-      postBuild = ''
-        wrapProgram $out/bin/${name} --prefix PATH : $out/bin
-      '';
+      postBuild = "wrapProgram $out/bin/${name} --prefix PATH : $out/bin";
     };
   };
 in
