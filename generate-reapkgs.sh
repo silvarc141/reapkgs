@@ -142,10 +142,6 @@ output_directory="./generated"
 index_urls_path="" # if empty uses indexes from known repos
 hash_data_path="" # if empty writes and reades from a temporary file
 
-if [ -n "$INCLUDE_DIR" ]; then
-  INCLUDE_DIR="."
-fi
-
 while getopts "o:i:d:gprh" opt; do
   case $opt in
     h) print_help; exit 0 ;;
@@ -205,22 +201,24 @@ if [ "$generate" = true ]; then
     generate_nix_from_index "$index_output_subdir" "$index_url" 
   done
 
+  relative=$(dirname "$0")
+
   echo "Generating default.nix..."
   files=$(
     find "$index_output_subdir" -maxdepth 1 -name "*.nix" -not -name "default.nix" -printf './%P\n' | 
     sort | sed 's/^/    /g' | unexpand_newline
   )
-  sed "s|.*#insert.*|${files}|g" > "${index_output_subdir}/default.nix" < "$INCLUDE_DIR"/template-default.nix
+  sed "s|.*#insert.*|${files}|g" > "${index_output_subdir}/default.nix" < "$relative/template-default.nix"
 
   echo "Generating flake.nix..."
   urls=$(
     printf '%s\n' "${index_urls[@]}" |
     sort | sed 's/^/    /g' | unexpand_newline
   )
-  sed "s|.*#insert.*|${urls}|g" > "${output_directory}/flake.nix" < "$INCLUDE_DIR"/template-flake.nix
+  sed "s|.*#insert.*|${urls}|g" > "${output_directory}/flake.nix" < "$relative/template-flake.nix"
 
   echo "Copying mk-reapack-package.nix..."
-  cp "$(dirname "$0")/mk-reapack-package.nix" "$output_directory/"
+  cp "$relative/mk-reapack-package.nix" "$output_directory/"
 fi
 
 if [ "$prefetch_hashes" = true ]; then

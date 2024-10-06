@@ -6,19 +6,17 @@
       dependencies =
         (with pkgs; [xmlstarlet parallel])
         ++ map mkInclude [
-          ./mk-reapack-package.nix
-          ./template-flake.nix
-          ./template-default.nix
+          {name = "mk-reapack-package.nix"; path = ./mk-reapack-package.nix;}
+          {name = "template-flake.nix"; path = ./template-flake.nix;}
+          {name = "template-default.nix"; path = ./template-default.nix;}
         ];
     }
   ];
-
-  mkInclude = path: (pkgs.writeTextFile {
-    name = pkgs.lib.strings.sanitizeDerivationName (toString path);
+  mkInclude = {name, path}: (pkgs.writeTextFile {
+    inherit name;
     text = builtins.readFile path;
-    destination = "/bin/${path}";
+    destination = "/bin/${name}";
   });
-
   mkScript = elem: let
     inherit (elem) name;
     script = (pkgs.writeScriptBin name (builtins.readFile elem.path)).overrideAttrs (old: {
@@ -36,5 +34,4 @@
       postBuild = "wrapProgram $out/bin/${name} --prefix PATH : $out/bin";
     };
   };
-in
-  builtins.listToAttrs (map mkScript scripts)
+in builtins.listToAttrs (map mkScript scripts)
