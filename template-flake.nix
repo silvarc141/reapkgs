@@ -1,12 +1,11 @@
 {
   description = ''
     A reapkgs flake generated from the following Reapack indexes:
-
     #insert index-urls
 
     Links:
-    reapkgs main repo: https://github.com/silvarc141/reapkgs
-    Known repos generated flake: https://github.com/silvarc141/reapkgs-known
+    Main repo: https://github.com/silvarc141/reapkgs
+    Flake generated for known ReaPack repos: https://github.com/silvarc141/reapkgs-known
   '';
 
   inputs = {
