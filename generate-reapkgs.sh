@@ -127,12 +127,14 @@ print_help() {
   echo "  -o <directory>  Set output directory for generated files (if empty, use ./generated)"
   echo "  -i <file>       Specify a file containing newline-separated index URLs (if empty, use known repos)"
   echo "  -d <file>       Specify a file to store and read hash data (if empty, use temp file)"
+  echo "  -j <cores>      Specify the number of cores to use for prefetching (default: number of available cores)"
   echo ""
   echo "Examples:"
   echo "  $name -gpr                        # Create reapkgs flake for known repos' indexes"
   echo "  $name -gpr -i ./index-list.txt    # Create reapkgs flake for a custom index url list"
   echo "  $name -p -d ./new-hashes.txt      # Prefetch hash data of urls in nix files in default ./generated path to ./new-hashes.txt"
   echo "  $name -r -d ./old-hashes.txt      # Replace hashes in default ./generated path using hash data from ./old-hashes.txt"
+  echo "  $name -p -j 4                     # Prefetch hash data using 4 cores"
 }
 
 generate=false
@@ -141,8 +143,8 @@ replace_hashes=false
 output_directory="./generated"
 index_urls_path="" # if empty uses indexes from known repos
 hash_data_path="" # if empty writes and reades from a temporary file
-
-while getopts "o:i:d:gprh" opt; do
+cores="" # if empty, use all available cores
+while getopts "o:i:d:j:gprh" opt; do
   case $opt in
     h) print_help; exit 0 ;;
     g) generate=true ;;
@@ -151,6 +153,7 @@ while getopts "o:i:d:gprh" opt; do
     o) output_directory="$OPTARG" ;;
     i) index_urls_path="$OPTARG" ;;
     d) hash_data_path="$OPTARG" ;;
+    j) cores="$OPTARG" ;;
     \?) echo "Invalid option: -$OPTARG" >&2; print_help; exit 1 ;;
   esac
 done
@@ -234,7 +237,7 @@ if [ "$prefetch_hashes" = true ]; then
     url=$(echo "$line" | cut -d '|' -f2-)
     echo "$file#$url"
   done | 
-  parallel --no-notice --colsep '#' prefetch_hash {1} {2} > "${hash_data_path:-hash_data.tmp}"
+  parallel ${cores:+"-j $cores"} --no-notice --colsep '#' prefetch_hash {1} {2} > "${hash_data_path:-hash.tmp}"
 fi
 
 if [ "$replace_hashes" = true ]; then
@@ -243,10 +246,10 @@ if [ "$replace_hashes" = true ]; then
     if ! replace_hash "$file" "$url" "$sha256"; then
       echo "Failed to replace hash for $url in $file"
     fi
-  done < "${hash_data_path:-hash_data.tmp}"
+  done < "${hash_data_path:-hash.tmp}"
 fi
 
 if [ "$prefetch_hashes" = true ] && [ "$replace_hashes" = true ] && [ -z "$hash_data_path" ]; then
   echo "Cleaning up temporary hash file..."
-  rm hash_data.tmp
+  rm hash.tmp
 fi
