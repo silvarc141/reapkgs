@@ -127,7 +127,7 @@ print_help() {
   echo "  -o <directory>  Set output directory for generated files (if empty, use ./generated)"
   echo "  -i <file>       Specify a file containing newline-separated index URLs (if empty, use known repos)"
   echo "  -d <file>       Specify a file to store and read hash data (if empty, use temp file)"
-  echo "  -j <threads>      Specify the number of threads to use for prefetching"
+  echo "  -j <processes>      Specify the number of processes to use for prefetching"
   echo "  -q              Do not create log files"
   echo "Examples:"
   echo "  $name -gpr                        # Create reapkgs flake for known repos' indexes"
@@ -142,7 +142,7 @@ replace_hashes=false
 output_directory="./generated"
 index_urls_path="" # if empty uses indexes from known repos
 hash_data_path="" # if empty writes and reades from a temporary file
-threads=""
+processes=""
 no_logs=false
 
 while getopts "o:i:d:j:gprhq" opt; do
@@ -154,7 +154,7 @@ while getopts "o:i:d:j:gprhq" opt; do
     o) output_directory="$OPTARG" ;;
     i) index_urls_path="$OPTARG" ;;
     d) hash_data_path="$OPTARG" ;;
-    j) threads="$OPTARG" ;;
+    j) processes="$OPTARG" ;;
     q) no_logs=true ;;
     \?) echo "Invalid option: -$OPTARG" >&2; print_help; exit 1 ;;
   esac
@@ -241,7 +241,7 @@ if [ "$prefetch_hashes" = true ]; then
     url=$(echo "$line" | cut -d '|' -f2-)
     echo "$file#$url"
   done | 
-  parallel ${threads:+"-j $threads"} --no-notice --colsep '#' prefetch_hash {1} {2} > "${hash_data_path:-hash.tmp}"
+  parallel ${processes:+"-j $processes"} --no-notice --colsep '#' prefetch_hash {1} {2} > "${hash_data_path:-hash.tmp}"
 fi
 
 if [ "$replace_hashes" = true ]; then
