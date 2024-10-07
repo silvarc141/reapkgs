@@ -107,7 +107,9 @@ prefetch_hash() {
   local sha256
   local name
   name=$(basename "$url" | sanitize_name)
-  if ! sha256=$(nix-prefetch-url "${url}" --name "$name" 2>/dev/null); then
+  url=$(curl -w "%{url_effective}\n" -I -L -s -S "$url" -o /dev/null)
+  sha256=$(nix-prefetch-url "${url}" --name "$name")
+  if ! $sha256; then
     echo "Error fetching $url" >&2
     return 1
   fi
