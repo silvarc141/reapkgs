@@ -108,7 +108,7 @@ prefetch_hash() {
   local name
   name=$(basename "$url" | sanitize_name)
   if ! sha256=$(nix-prefetch-url "${url}" --name "$name" 2>/dev/null); then
-    echo "Error fetching $url: $sha256" >&2
+    echo "Error fetching $url" >&2
     return 1
   fi
   echo "$file|$url|$sha256"
