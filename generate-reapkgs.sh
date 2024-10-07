@@ -127,8 +127,8 @@ print_help() {
   echo "  -o <directory>  Set output directory for generated files (if empty, use ./generated)"
   echo "  -i <file>       Specify a file containing newline-separated index URLs (if empty, use known repos)"
   echo "  -d <file>       Specify a file to store and read hash data (if empty, use temp file)"
-  echo "  -j <cores>      Specify the number of cores to use for prefetching (default: number of available cores)"
-  echo ""
+  echo "  -j <cores>      Specify the number of cores to use for prefetching"
+  echo "  -q              Do not create log files"
   echo "Examples:"
   echo "  $name -gpr                        # Create reapkgs flake for known repos' indexes"
   echo "  $name -gpr -i ./index-list.txt    # Create reapkgs flake for a custom index url list"
@@ -136,15 +136,16 @@ print_help() {
   echo "  $name -r -d ./old-hashes.txt      # Replace hashes in default ./generated path using hash data from ./old-hashes.txt"
   echo "  $name -p -j 4                     # Prefetch hash data using 4 cores"
 }
-
 generate=false
 prefetch_hashes=false
 replace_hashes=false
 output_directory="./generated"
 index_urls_path="" # if empty uses indexes from known repos
 hash_data_path="" # if empty writes and reades from a temporary file
-cores="" # if empty, use all available cores
-while getopts "o:i:d:j:gprh" opt; do
+cores=""
+no_logs=false
+
+while getopts "o:i:d:j:gprhq" opt; do
   case $opt in
     h) print_help; exit 0 ;;
     g) generate=true ;;
@@ -154,13 +155,16 @@ while getopts "o:i:d:j:gprh" opt; do
     i) index_urls_path="$OPTARG" ;;
     d) hash_data_path="$OPTARG" ;;
     j) cores="$OPTARG" ;;
+    q) no_logs=true ;;
     \?) echo "Invalid option: -$OPTARG" >&2; print_help; exit 1 ;;
   esac
 done
-timestamp=$(date +"%Y-%m-%d-%H-%M-%S")
-mkdir -p ./log
-log_file="./log/reapkgs-${timestamp}.log"
-exec > >(tee -a "$log_file") 2>&1
+if [ "$no_logs" = false ]; then
+  timestamp=$(date +"%Y-%m-%d-%H-%M-%S")
+  mkdir -p ./log
+  log_file="./log/reapkgs-${timestamp}.log"
+  exec > >(tee -a "$log_file") 2>&1
+fi
 
 if [ $# -eq 0 ]; then
   print_help
