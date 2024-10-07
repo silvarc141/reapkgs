@@ -234,7 +234,9 @@ if [ "$prefetch_hashes" = true ]; then
   echo "Prefetching hashes..."
   export -f prefetch_hash
   export -f sanitize_name
-  mkdir ./parallel-tmp-dir
+  relative=$(dirname "$0")
+  tmpdir="$relative/parallel-tmp-dir"
+  mkdir -p "$tmpdir"
 
   find "$index_output_subdir" -name "*.nix" ! -name "default.nix" -print0 |
   xargs -0 grep 'url = ' -H |
@@ -247,10 +249,10 @@ if [ "$prefetch_hashes" = true ]; then
   parallel \
   ${processes:+"-j $processes"} \
   --no-notice \
-  --tmpdir ./parallel-tmp-dir \
+  --tmpdir "$tmpdir" \
   --colsep '#' prefetch_hash {1} {2} > "${hash_data_path:-hash.tmp}"
 
-  rm -rf ./parallel-tmp-dir
+  rm -rf "$tmpdir"
 fi
 
 if [ "$replace_hashes" = true ]; then
