@@ -18,7 +18,8 @@ If you only wish to use known repos, proceed to the next section.
 If you wish to use other ReaPack repos, you have to generate and include a new flake.
 
 1. Create a file with urls to your repo's ReaPack index files.
-[in urls.txt]
+
+(in urls.txt)
 ```
 https://github.com/Yaunick/Yannick-ReaScripts/raw/master/index.xml
 https://geraintluff.github.io/jsfx/index.xml
@@ -56,7 +57,8 @@ or without nix
 ## Using generated flakes
 
 1. Add to flake inputs
-[in flake.nix]
+
+(in flake.nix)
 ```nix
 {
   inputs = {
@@ -67,7 +69,8 @@ or without nix
 }
 ```
 2. Use with home-manager
-[in home.nix]
+
+(in home.nix)
 ```nix
 xdg.configFile.REAPER = {
 
