@@ -234,8 +234,7 @@ if [ "$prefetch_hashes" = true ]; then
   echo "Prefetching hashes..."
   export -f prefetch_hash
   export -f sanitize_name
-  relative=$(dirname "$0")
-  tmpdir="$relative/parallel-tmp-dir"
+  tmpdir="$output_directory/parallel-tmp-dir"
   mkdir -p "$tmpdir"
 
   find "$index_output_subdir" -name "*.nix" ! -name "default.nix" -print0 |
