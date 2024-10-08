@@ -61,7 +61,7 @@ EOF
       done
     cat << EOF
     ${fullPackageName} = mkReapackPackage {
-      inherit stdenv fetchurl;
+      inherit lib stdenv fetchurl;
       name = "${fullPackageName}";
       indexName = "${index_name}";
       categoryName = "${category_name}";
@@ -83,6 +83,7 @@ generate_nix_from_index() {
 
   cat << EOF > "$output_file"
 {
+  lib,
   mkReapackPackage, 
   stdenv, 
   fetchurl,
@@ -108,9 +109,8 @@ prefetch_hash() {
   local name
   name=$(basename "$url" | sanitize_name)
   redirected_url=$(curl -w "%{url_effective}\n" -I -L -s -S "$url" -o /dev/null)
-  if ! sha256=$(nix-prefetch-url "${url}" --name "$name" 2>/dev/null); then
-    echo "Error fetching $url" >&2
-    echo "Redirected to $redirected_url" >&2
+  if ! sha256=$(nix-prefetch-url "${redirected_url}" --name "$name" 2>/dev/null); then
+    echo "Error prefetching $redirected_url (redirected from $url)" >&2
     return 1
   fi
   echo "$file|$url|$sha256"
