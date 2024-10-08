@@ -107,10 +107,10 @@ prefetch_hash() {
   local sha256
   local name
   name=$(basename "$url" | sanitize_name)
-  url=$(curl -w "%{url_effective}\n" -I -L -s -S "$url" -o /dev/null)
-  sha256=$(nix-prefetch-url "${url}" --name "$name")
-  if ! $sha256; then
+  redirected_url=$(curl -w "%{url_effective}\n" -I -L -s -S "$url" -o /dev/null)
+  if ! sha256=$(nix-prefetch-url "${url}" --name "$name"); then
     echo "Error fetching $url" >&2
+    echo "Redirected to $redirected_url" >&2
     return 1
   fi
   echo "$file|$url|$sha256"
