@@ -97,6 +97,8 @@ xdg.configFile.REAPER = {
 };
 ```
 
+I plan on building a home-manager module for REAPER that will incorporate reapkgs in the future.
+
 ## Package discovery
 
 Simplest way to find a reapkgs package exact attribute name is to search the generated flake after finding the name of the package in ReaPack browser.
