@@ -9,7 +9,7 @@ reapkgs is a nix flake repackaging of [ReaPack](https://reapack.com) repos. Allo
 
 ## What it is not
 
-reapkgs is NOT meant to replace ReaPack itself. The project supports only a small subset of ReaPack's functionality, and is meant to be used alongside it. For example, there is no plans for package discovery through reapkgs, or use outside of nix-enabled environments. That said, reapkgs does not require installation or usage of ReaPack.
+reapkgs is NOT meant to replace ReaPack itself. The project supports only a small subset of ReaPack's functionality, and is meant to be used alongside it. For example, this is usable only in nix-enabled environments and there are no plans right now for package discovery through reapkgs. That said, reapkgs does not require installation or usage of ReaPack.
 
 ## Generating flakes
 
@@ -27,11 +27,16 @@ https://acendan.github.io/reascripts/index.xml
 ```
 2. Generate the flake
 
-### With nix installed
+### With nix package manager installed (recommended)
 
 Run:
 ```
 nix run github:silvarc141/reapkgs -- -gpri urls.txt
+```
+
+Or when on a non-flake-enabled system:
+```
+nix --experimental-features 'nix-command flakes' run github:silvarc141/reapkgs -- -gpri urls.txt
 ```
 
 ### Without nix installed
@@ -91,6 +96,14 @@ xdg.configFile.REAPER = {
   };
 };
 ```
+
+## Package discovery
+
+Simplest way to find a reapkgs package exact attribute name is to search the generated flake after finding the name of the package in ReaPack browser.
+As of now there are no plans for other means of package discovery.
+
+Package names are generated from ReaPack package names, but adapted to a the nix package naming convention (lowercase-semicolon-separated).
+Each ReaPack package version is a separate attribute in reapkgs, with its version sanitized and appended to the name.
 
 ## Made possible thanks to:
 
