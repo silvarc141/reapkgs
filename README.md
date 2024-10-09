@@ -13,8 +13,8 @@ reapkgs is NOT meant to replace ReaPack itself. The project supports only a smal
 
 ## Generating flakes
 
-A flake for "known" ReaPack repos is generated in the [reapkgs-known repo](https://github.com/silvarc141/reapkgs-known).
-If you only wish to use known repos, proceed to the next section.
+A flake for "known" ReaPack repos is generated in the [reapkgs-known repo](https://github.com/silvarc141/reapkgs-known).  
+If you only wish to use known repos, proceed to section about [using generated flakes](#using-generated-flakes).  
 If you wish to use other ReaPack repos, you have to generate and include a new flake.
 
 1. Create a file with urls to your repo's ReaPack index files.
