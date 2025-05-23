@@ -8,7 +8,8 @@
   packageType,
   sources,
 }:
-with lib; let
+let
+  inherit (lib.strings) sanitizeDerivationName replaceStrings concatMapStrings;
   typeToPath = {
     script = "Scripts";
     effect = "Effects";
@@ -34,11 +35,11 @@ with lib; let
 
   getPathFromSource = (s: if s.path == "" then (baseNameOf (decodeUrl s.url)) else s.path);
 
-  sourcesWithName = map (s: s // {name = strings.sanitizeDerivationName (decodeUrl s.url);}) sources;
+  sourcesWithName = map (s: s // {name = sanitizeDerivationName (decodeUrl s.url);}) sources;
 in
   stdenv.mkDerivation {
     name = name;
-    meta.platforms = platforms.all;
+    meta.platforms = lib.platforms.all;
 
     dontUnpack = true;
     dontPatch = true;
@@ -49,7 +50,7 @@ in
 
     srcs = map (elem: fetchurl {inherit (elem) url sha256 name;}) sourcesWithName;
 
-    pairs = escapeSingleQuote (strings.concatMapStrings (s: "${s.name}|${(getPathFromSource s)}|") sourcesWithName);
+    pairs = escapeSingleQuote (concatMapStrings (s: "${s.name}|${(getPathFromSource s)}|") sourcesWithName);
 
     passAsFile = [ "srcs" "pairs" ];
 
