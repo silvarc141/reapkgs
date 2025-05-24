@@ -22,11 +22,11 @@ def prefetch_hash [] {
     let sanitized_name =  $url | path parse | get stem | sanitize_name
     let url_redirected = $url | get_final_redirect_url
 
-    print $"Start prefetching ($url)"
+    print -e $"Start prefetching ($url)"
     let hash = nix-prefetch-url $url_redirected --name $sanitized_name e> /dev/null
 
     if $env.LAST_EXIT_CODE == 0 {
-        print $"Successfully prefetched ($url)"
+        print -e $"Successfully prefetched ($url)"
         $hash
     } else {
         print $"Error prefetching ($url)"
@@ -105,7 +105,7 @@ def build_versions_with_hashes [raw_versions, hashes, package_index] {
     | sort-by time --reverse
 }
 
-def cleanup_reapack_index [] {
+def process_reapack_index [] {
     let packages = (
         $in
         | get content
@@ -142,4 +142,18 @@ def cleanup_reapack_index [] {
         }
     }
     | move --first name type category description
+}
+
+def main [] { help main }
+
+def "main xml" [
+    xml: string # ReaPack index xml as a string
+] {
+    $xml | from xml | process_reapack_index | to json
+}
+
+def "main url" [
+    url: string # URL of the ReaPack index xml file
+] {
+    http get $url | process_reapack_index | to json
 }
