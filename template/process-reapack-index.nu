@@ -22,14 +22,14 @@ def prefetch_hash [] {
     let sanitized_name =  $url | path parse | get stem | sanitize_name
     let url_redirected = $url | get_final_redirect_url
 
-    print -e $"Start prefetching ($url)"
+    print -e $"Starting prefetching ($url)"
     let hash = nix-prefetch-url $url_redirected --name $sanitized_name e> /dev/null
 
     if $env.LAST_EXIT_CODE == 0 {
         print -e $"Successfully prefetched ($url)"
         $hash
     } else {
-        print $"Error prefetching ($url)"
+        print -e $"Error prefetching ($url)"
         error make {msg: $"Error prefetching ($url_redirected) \(redirected from ($url)\)"}
     }
 }
@@ -96,10 +96,10 @@ def build_versions_with_hashes [raw_versions, hashes, package_index] {
             hash: ($in.hash)
         }
         {
-            version_name: $version_data.attributes.name,
+            name: $version_data.attributes.name,
             author: $version_data.attributes.author,
             time: ($version_data.attributes.time | into datetime),
-            data: $sources_with_hashes
+            files: $sources_with_hashes
         }
     }
     | sort-by time --reverse
@@ -134,8 +134,7 @@ def process_reapack_index [] {
     $extracted_packages
     | each {|entry|
         {
-            name: $entry.data.name,
-            sanitized_name: ($entry.data.name | path parse | get stem | sanitize_name),
+            name: ($entry.data.name | path parse | get stem | sanitize_name),
             type: $entry.data.type,
             category: $entry.data.category,
             description: $entry.data.description,
@@ -145,9 +144,39 @@ def process_reapack_index [] {
     | move --first name type category description
 }
 
+def get_path [] {
+  # typeToPath = {
+  #   script = "Scripts";
+  #   effect = "Effects";
+  #   data = "Data";
+  #   extension = "UserPlugins";
+  #   theme = "ColorThemes";
+  #   langpack = "LangPack";
+  #   web-interface = "reaper_www_root";
+  #   project-template = "ProjectTemplates";
+  #   track-template = "TrackTemplates";
+  #   midi-note-names = "MIDINoteNames";
+  #   automation-item = "AutomationItems";
+  # };
+  #
+  # parentDir =
+  #   if builtins.elem packageType ["script" "effect" "automation-item"]
+  #   then "${typeToPath.${packageType}}/${indexName}/${categoryName}"
+  #   else "${typeToPath.${packageType}}";
+  #
+  # escapeSingleQuote = s: replaceStrings ["'"] ["'\\''"] s;
+  #
+  # decodeUrl = s: replaceStrings ["%20" "%21" "%22" "%23" "%24" "%25" "%26" "%27" "%28" "%29" "%2A" "%2B" "%2C" "%2D" "%2E" "%2F" "%3A" "%3B" "%3C" "%3D" "%3E" "%3F" "%40" "%5B" "%5C" "%5D" "%5E" "%5F" "%60" "%7B" "%7C" "%7D" "%7E"] [" " "!" "\"" "#" "$" "%" "&" "'" "(" ")" "*" "+" "," "-" "." "/" ":" ";" "<" "=" ">" "?" "@" "[" "\\" "]" "^" "_" "`" "{" "|" "}" "~"] s;
+  #
+  # getPathFromSource = (s: if s.path == "" then (baseNameOf (decodeUrl s.url)) else s.path);
+  #
+  # sourcesWithName = map (s: s // {name = sanitizeDerivationName (decodeUrl s.url);}) sources;
+}
+
 # Takes a ReaPack index URL as input and outputs it's data with prefetched file hashes in JSON
 def main [
     --raw (-r) # Treat piped input as a raw xml string
 ]: string -> string { 
     if $raw { $in | from xml | process_reapack_index | to json } else { http get $in | process_reapack_index | to json }
 }
+
