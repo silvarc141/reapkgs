@@ -1,4 +1,4 @@
-#!/usr/bin/env nu
+#!/usr/bin/env -S nu --stdin
 
 # Is it possible to get the final redirect with http get and remove curl dependency?
 def get_final_redirect_url [] {
@@ -96,7 +96,7 @@ def build_versions_with_hashes [raw_versions, hashes, package_index] {
             hash: ($in.hash)
         }
         {
-            version: $version_data.attributes.name,
+            version_name: $version_data.attributes.name,
             author: $version_data.attributes.author,
             time: ($version_data.attributes.time | into datetime),
             data: $sources_with_hashes
@@ -135,25 +135,19 @@ def process_reapack_index [] {
     | each {|entry|
         {
             name: $entry.data.name,
+            sanitized_name: ($entry.data.name | path parse | get stem | sanitize_name),
             type: $entry.data.type,
             category: $entry.data.category,
             description: $entry.data.description,
-            source: (build_versions_with_hashes $entry.data.raw_versions $hashes $entry.index)
+            versions: (build_versions_with_hashes $entry.data.raw_versions $hashes $entry.index)
         }
     }
     | move --first name type category description
 }
 
-def main [] { help main }
-
-def "main xml" [
-    xml: string # ReaPack index xml as a string
-] {
-    $xml | from xml | process_reapack_index | to json
-}
-
-def "main url" [
-    url: string # URL of the ReaPack index xml file
-] {
-    http get $url | process_reapack_index | to json
+# Takes a ReaPack index URL as input and outputs it's data with prefetched file hashes in JSON
+def main [
+    --raw (-r) # Treat piped input as a raw xml string
+]: string -> string { 
+    if $raw { $in | from xml | process_reapack_index | to json } else { http get $in | process_reapack_index | to json }
 }

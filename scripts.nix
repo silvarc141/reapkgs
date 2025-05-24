@@ -4,7 +4,7 @@
       name = "generateReapkgs";
       path = ./generate-reapkgs.sh;
       dependencies =
-        (with pkgs; [xmlstarlet parallel])
+        (with pkgs; [curl xmlstarlet parallel])
         ++ map mkInclude [
           {name = "mk-reapack-package.nix"; path = ./mk-reapack-package.nix;}
           {name = "template-flake.nix"; path = ./template-flake.nix;}
