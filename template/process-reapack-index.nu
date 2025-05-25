@@ -2,7 +2,13 @@
 
 # Is it possible to get the final redirect with http get and remove curl dependency?
 def get_final_redirect_url [] {
-    curl -w "%{url_effective}\n" -I -L -s -S $in -o /dev/null
+    (curl $in 
+        --location # follow redirects
+        --write-out "%{url_effective}\n" # output final redirect to stdout
+        --output /dev/null # ignore regular output
+        --head # fetch headers only
+        --silent --show-error # only show errors
+    )
 }
 
 def sanitize_name [] {
@@ -34,7 +40,7 @@ def prefetch_hash [] {
     }
 }
 
-def extract_links_with_indices [package_index, raw_versions] {
+def get_addressed_urls [package_index, raw_versions] {
   $raw_versions
   | enumerate
   | each {|raw_version|
@@ -44,7 +50,7 @@ def extract_links_with_indices [package_index, raw_versions] {
           {
               package_index: $package_index,
               version_index: $raw_version.index,
-              link: ($file.content.content | first)
+              url: ($file.content.content | first)
           }
       }
   }
@@ -66,9 +72,9 @@ def reconstruct_versions [raw_versions, hashed_files, package_index] {
                 | each {|file|
                     let explicit_relative_path = $version_data.attributes | get -i file | default ""
                     {
-                        link: ($file.link), 
+                        url: ($file.url), 
                         hash: ($file.hash),
-                        relative_path: (get_package_file_relative_path $file.link $explicit_relative_path)
+                        relative_path: (get_package_file_relative_path $file.url $explicit_relative_path)
                     }
                 })
         }
@@ -139,22 +145,22 @@ def process_reapack_index [] {
             }
             | insert relative_parent_directory (get_package_parent_directory_relative_path $index_name $in.type $in.category)
 
-            let addressed_urls = extract_links_with_indices $package.index $package_data.raw_versions
+            let addressed_urls = get_addressed_urls $package.index $package_data.raw_versions
 
             {
                 index: $package.index,
                 data: $package_data,
-                links: $addressed_urls
+                urls: $addressed_urls
             }
         }
     )
 
-    let hashed_files = $processed_packages | get links | flatten | par-each {|entry|
+    let hashed_files = $processed_packages | get urls | flatten | par-each {|entry|
         {
             package_index: $entry.package_index,
             version_index: $entry.version_index,
-            link: $entry.link,
-            hash: ($entry.link | prefetch_hash)
+            url: $entry.url,
+            hash: ($entry.url | prefetch_hash)
         }
     }
 
