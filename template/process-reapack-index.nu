@@ -44,12 +44,8 @@ def extract_package_data [index_name: string] {
         description: $package.content.attributes.desc,
         type: $type,
         category: $category,
-        relative_parent_directory: $relative_parent_directory
-        raw_versions: (
-            $package.content.content
-            | where tag == version
-            | reject tag
-        )
+        relative_parent_directory: $relative_parent_directory,
+        raw_versions: ($package.content.content | where tag == version | reject tag)
     }
 }
 
@@ -133,8 +129,7 @@ def get_package_parent_directory_relative_path [
 
     if (["script" "effect" "automation-item"] has $type) {
         $"($typePath)/($index_name)/($category)"
-    }
-    else {
+    } else {
         $typePath
     }
 }
