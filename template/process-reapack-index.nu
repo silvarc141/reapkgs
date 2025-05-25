@@ -34,73 +34,43 @@ def prefetch_hash [] {
     }
 }
 
-def extract_package_data [index_name: string] {
-    let package = $in
-    let type = $package.content.attributes.type
-    let category = $package.category
-    let relative_parent_directory = get_package_parent_directory_relative_path $index_name $type $category
-    {
-        name: $package.content.attributes.name,
-        description: $package.content.attributes.desc,
-        type: $type,
-        category: $category,
-        relative_parent_directory: $relative_parent_directory,
-        raw_versions: ($package.content.content | where tag == version | reject tag)
-    }
+def extract_links_with_indices [package_index, raw_versions] {
+  $raw_versions
+  | enumerate
+  | each {|raw_version|
+      $raw_version.item.content
+      | where tag == source
+      | each {|file|
+          {
+              package_index: $package_index,
+              version_index: $raw_version.index,
+              link: ($file.content.content | first)
+          }
+      }
+  }
+  | flatten
 }
 
-def extract_links_with_indices [package_index, versions] {
-    $versions
-    | enumerate
-    | each {|v|
-        $v.item.content
-        | where tag == source
-        | first
-        | get content
-        | get content
-        | enumerate
-        | each {|link|
-            {
-                package_index: $package_index,
-                version_index: $v.index,
-                link: $link.item
-            }
-        }
-    }
-    | flatten
-}
-
-def compute_hashes_parallel [] {
-    $in
-    | par-each {|entry|
-        {
-            package_index: $entry.package_index,
-            version_index: $entry.version_index,
-            link: $entry.link,
-            hash: ($entry.link | prefetch_hash)
-        }
-    }
-}
-
-def build_versions_with_hashes [raw_versions, hashes, package_index] {
+def reconstruct_versions [raw_versions, hashed_files, package_index] {
     $raw_versions
     | enumerate
     | each {|entry|
         let version_index = $entry.index
         let version_data = $entry.item
-        let sources_with_hashes = $hashes
-        | where package_index == $package_index and version_index == $version_index
-        | first
-        | {
-            link: ($in.link), 
-            hash: ($in.hash),
-            relative_path: (get_package_file_relative_path $in.link $in.link)
-        }
         {
             name: $version_data.attributes.name,
             author: $version_data.attributes.author,
             time: ($version_data.attributes.time | into datetime),
-            files: $sources_with_hashes
+            files: ($hashed_files
+                | where package_index == $package_index and version_index == $version_index
+                | each {|file|
+                    let explicit_relative_path = $version_data.attributes | get -i file | default ""
+                    {
+                        link: ($file.link), 
+                        hash: ($file.hash),
+                        relative_path: (get_package_file_relative_path $file.link $explicit_relative_path)
+                    }
+                })
         }
     }
     | sort-by time --reverse
@@ -156,31 +126,42 @@ def process_reapack_index [] {
         | rename -c {name: category}
     )
 
-    let extracted_packages = (
+    let processed_packages = (
         $packages
         | enumerate
         | each {|package|
-            let package_data = $package.item | (extract_package_data $index_name)
-            let link_entries = extract_links_with_indices $package.index $package_data.raw_versions
+            let package_data = {
+                name: ($package.item.content.attributes.name | path parse | get stem | sanitize_name),
+                description: $package.item.content.attributes.desc,
+                type: $package.item.content.attributes.type,
+                category: $package.item.category,
+                raw_versions: ($package.item.content.content | where tag == version | reject tag)
+            }
+            | insert relative_parent_directory (get_package_parent_directory_relative_path $index_name $in.type $in.category)
+
+            let addressed_urls = extract_links_with_indices $package.index $package_data.raw_versions
+
             {
                 index: $package.index,
                 data: $package_data,
-                links: $link_entries
+                links: $addressed_urls
             }
         }
     )
 
-    let hashes = $extracted_packages | get links | flatten | compute_hashes_parallel
-
-    $extracted_packages
-    | each {|entry|
+    let hashed_files = $processed_packages | get links | flatten | par-each {|entry|
         {
-            name: ($entry.data.name | path parse | get stem | sanitize_name),
-            type: $entry.data.type,
-            category: $entry.data.category,
-            description: $entry.data.description,
-            versions: (build_versions_with_hashes $entry.data.raw_versions $hashes $entry.index)
+            package_index: $entry.package_index,
+            version_index: $entry.version_index,
+            link: $entry.link,
+            hash: ($entry.link | prefetch_hash)
         }
+    }
+
+    $processed_packages | each {|entry|
+        $entry.data 
+        | insert versions (reconstruct_versions $entry.data.raw_versions $hashed_files $entry.index)
+        | reject raw_versions
     }
     | move --first name type category description
 }
