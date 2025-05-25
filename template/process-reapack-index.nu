@@ -34,13 +34,17 @@ def prefetch_hash [] {
     }
 }
 
-def extract_package_data [] {
+def extract_package_data [index_name: string] {
     let package = $in
+    let type = $package.content.attributes.type
+    let category = $package.category
+    let relative_parent_directory = get_package_parent_directory_relative_path $index_name $type $category
     {
-        category: $package.category,
         name: $package.content.attributes.name,
-        type: $package.content.attributes.type,
         description: $package.content.attributes.desc,
+        type: $type,
+        category: $category,
+        relative_parent_directory: $relative_parent_directory
         raw_versions: (
             $package.content.content
             | where tag == version
@@ -93,7 +97,8 @@ def build_versions_with_hashes [raw_versions, hashes, package_index] {
         | first
         | {
             link: ($in.link), 
-            hash: ($in.hash)
+            hash: ($in.hash),
+            relative_path: (get_package_file_relative_path $in.link $in.link)
         }
         {
             name: $version_data.attributes.name,
@@ -105,7 +110,48 @@ def build_versions_with_hashes [raw_versions, hashes, package_index] {
     | sort-by time --reverse
 }
 
+def get_package_parent_directory_relative_path [
+    index_name: string
+    type: string
+    category: string
+] {
+    let typeToPath = {
+        script: "Scripts",
+        effect: "Effects",
+        data: "Data",
+        extension: "UserPlugins",
+        theme: "ColorThemes",
+        langpack: "LangPack",
+        web-interface: "reaper_www_root",
+        project-template: "ProjectTemplates",
+        track-template: "TrackTemplates",
+        midi-note-names: "MIDINoteNames",
+        automation-item: "AutomationItems",
+    };
+
+    let typePath = ($typeToPath | get $type)
+
+    if (["script" "effect" "automation-item"] has $type) {
+        $"($typePath)/($index_name)/($category)"
+    }
+    else {
+        $typePath
+    }
+}
+
+def get_package_file_relative_path [
+    url: string
+    explicit_file_path: string
+] {
+    if $explicit_file_path == "" { 
+        $url | url parse | get path | url decode | path basename 
+    } else { 
+        $explicit_file_path 
+    }
+}
+
 def process_reapack_index [] {
+    let index_name = $in.attributes.name
     let packages = (
         $in
         | get content
@@ -119,7 +165,7 @@ def process_reapack_index [] {
         $packages
         | enumerate
         | each {|package|
-            let package_data = $package.item | extract_package_data
+            let package_data = $package.item | (extract_package_data $index_name)
             let link_entries = extract_links_with_indices $package.index $package_data.raw_versions
             {
                 index: $package.index,
@@ -144,39 +190,9 @@ def process_reapack_index [] {
     | move --first name type category description
 }
 
-def get_path [] {
-  # typeToPath = {
-  #   script = "Scripts";
-  #   effect = "Effects";
-  #   data = "Data";
-  #   extension = "UserPlugins";
-  #   theme = "ColorThemes";
-  #   langpack = "LangPack";
-  #   web-interface = "reaper_www_root";
-  #   project-template = "ProjectTemplates";
-  #   track-template = "TrackTemplates";
-  #   midi-note-names = "MIDINoteNames";
-  #   automation-item = "AutomationItems";
-  # };
-  #
-  # parentDir =
-  #   if builtins.elem packageType ["script" "effect" "automation-item"]
-  #   then "${typeToPath.${packageType}}/${indexName}/${categoryName}"
-  #   else "${typeToPath.${packageType}}";
-  #
-  # escapeSingleQuote = s: replaceStrings ["'"] ["'\\''"] s;
-  #
-  # decodeUrl = s: replaceStrings ["%20" "%21" "%22" "%23" "%24" "%25" "%26" "%27" "%28" "%29" "%2A" "%2B" "%2C" "%2D" "%2E" "%2F" "%3A" "%3B" "%3C" "%3D" "%3E" "%3F" "%40" "%5B" "%5C" "%5D" "%5E" "%5F" "%60" "%7B" "%7C" "%7D" "%7E"] [" " "!" "\"" "#" "$" "%" "&" "'" "(" ")" "*" "+" "," "-" "." "/" ":" ";" "<" "=" ">" "?" "@" "[" "\\" "]" "^" "_" "`" "{" "|" "}" "~"] s;
-  #
-  # getPathFromSource = (s: if s.path == "" then (baseNameOf (decodeUrl s.url)) else s.path);
-  #
-  # sourcesWithName = map (s: s // {name = sanitizeDerivationName (decodeUrl s.url);}) sources;
-}
-
 # Takes a ReaPack index URL as input and outputs it's data with prefetched file hashes in JSON
 def main [
     --raw (-r) # Treat piped input as a raw xml string
 ]: string -> string { 
     if $raw { $in | from xml | process_reapack_index | to json } else { http get $in | process_reapack_index | to json }
 }
-
