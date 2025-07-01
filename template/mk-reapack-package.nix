@@ -2,43 +2,19 @@
   lib,
   stdenv,
   fetchurl,
-  name,
-  indexName,
-  categoryName,
-  packageType,
-  sources,
+  version,
+  parentDirectory,
+  files,
 }:
 let
   inherit (lib.strings) sanitizeDerivationName replaceStrings concatMapStrings;
-  typeToPath = {
-    script = "Scripts";
-    effect = "Effects";
-    data = "Data";
-    extension = "UserPlugins";
-    theme = "ColorThemes";
-    langpack = "LangPack";
-    web-interface = "reaper_www_root";
-    project-template = "ProjectTemplates";
-    track-template = "TrackTemplates";
-    midi-note-names = "MIDINoteNames";
-    automation-item = "AutomationItems";
-  };
-
-  parentDir =
-    if builtins.elem packageType ["script" "effect" "automation-item"]
-    then "${typeToPath.${packageType}}/${indexName}/${categoryName}"
-    else "${typeToPath.${packageType}}";
-
-  escapeSingleQuote = s: replaceStrings ["'"] ["'\\''"] s;
-
-  decodeUrl = s: replaceStrings ["%20" "%21" "%22" "%23" "%24" "%25" "%26" "%27" "%28" "%29" "%2A" "%2B" "%2C" "%2D" "%2E" "%2F" "%3A" "%3B" "%3C" "%3D" "%3E" "%3F" "%40" "%5B" "%5C" "%5D" "%5E" "%5F" "%60" "%7B" "%7C" "%7D" "%7E"] [" " "!" "\"" "#" "$" "%" "&" "'" "(" ")" "*" "+" "," "-" "." "/" ":" ";" "<" "=" ">" "?" "@" "[" "\\" "]" "^" "_" "`" "{" "|" "}" "~"] s;
 
   getPathFromSource = (s: if s.path == "" then (baseNameOf (decodeUrl s.url)) else s.path);
 
   sourcesWithName = map (s: s // {name = sanitizeDerivationName (decodeUrl s.url);}) sources;
 in
   stdenv.mkDerivation {
-    name = name;
+    name = version;
     meta.platforms = lib.platforms.all;
 
     dontUnpack = true;
@@ -59,7 +35,7 @@ in
       ''
         runHook preInstall
 
-        dst="$out/${parentDir}"
+        dst="$out/${parentDirectory}"
 
         readarray -td '|' pairsArray < "$pairsPath"
 

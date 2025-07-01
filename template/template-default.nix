@@ -4,9 +4,20 @@
   stdenv,
   fetchurl,
 }: let
-  imports = [
-    #insert imports
-  ];
-  importedPackages = map (path: import path {inherit lib mkReapackPackage stdenv fetchurl;}) imports;
+  importedSet = builtins.fromJSON (builtins.readFile ./test.json);
+  lazySet = builtins.foldl' (packages: p:
+    packages // {
+      ${p.name} = let 
+        versionDerivations = (builtins.foldl' (versions: v: 
+          versions // {
+            ${v.name} = mkReapackPackage lib stdenv fetchurl v.name p.relative_parent_directory v.files;
+          }
+        ) {} p.versions);
+        versionDerivationsWithLatest = versionDerivations // {
+          latest = mkReapackPackage lib stdenv fetchurl (lib.elemAt p.versions 0);
+        };
+      in versionDerivationsWithLatest;
+    }
+  ) {} importedSet;
 in
-  lib.foldl lib.mergeAttrs {} importedPackages
+  lazySet
