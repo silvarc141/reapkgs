@@ -20,13 +20,14 @@ let index_packages = $raw_index.content | each { |raw_category|
         author: ($raw_version | get -i attributes.author),
         files: $files
       }
-    }
+    } | sort-by --reverse time
     {
       name: ($raw_package | get -i attributes.name),
       type: ($raw_package | get -i attributes.type),
       category: $category_name,
       description: ($raw_package | get -i attributes.desc),
       versions: $versions
+      latest-version: $versions.0
     }
   }
 } | flatten
