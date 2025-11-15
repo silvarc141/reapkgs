@@ -18,17 +18,17 @@ let raw_index = http get https://github.com/JoepVanlier/JSFX/raw/master/index.xm
 
 let index_name = $raw_index.attributes.name
 
-let index_packages = $raw_index.content | each { |raw_category|
+let index_packages = $raw_index.content | par-each { |raw_category|
   let category_name = $raw_category | get -i attributes.name
-  $raw_category.content | each { |raw_package|
+  $raw_category.content | par-each { |raw_package|
     let type = $raw_package | get -i attributes.type
-    let versions = $raw_package | get content | where tag == version | each { |raw_version|
-      let files = $raw_version | get content | where tag == source | each { |raw_source|
+    let versions = $raw_package | get content | where tag == version | par-each { |raw_version|
+      let files = $raw_version | get content | where tag == source | par-each { |raw_source|
         let raw_explicit_path = $raw_source | get -i attributes.file
         let url = $raw_source | get -i content.content.0
 
         let relative_path = if $raw_explicit_path == null {
-          $url | url decode | path basename
+          $url | path basename | url decode
         } else {
           $raw_explicit_path
         }
@@ -41,9 +41,14 @@ let index_packages = $raw_index.content | each { |raw_category|
 
         let joined_path = $parent_dir | path join $relative_path
 
+        let redirected_url = curl -w "%{url_effective}" -I -L -s -S -o /dev/null $url | str trim
+        let sanitized_name = $url | url parse | get path | path basename | url decode | str replace -r -a '[^-.+_?=0-9a-zA-Z]' '-'
+        let sha256 = nix-prefetch-url $redirected_url --name $sanitized_name | str trim
+
         {
+          path: $joined_path,
           url: $url,
-          path: $joined_path
+          sha256: $sha256
         }
       }
       {
