@@ -1,4 +1,4 @@
-#!/usr/bin/env nu
+#!/usr/bin/env -S nu --stdin
 
 let type_to_path = {
   script: "Scripts",
@@ -34,7 +34,11 @@ def get-file-data-from-raw-source [ index_name category_name type raw_source ] {
 
   let redirected_url = curl -w "%{url_effective}" -I -L -s -S -o /dev/null $url | str trim
   let sanitized_name = $url | url parse | get path | path basename | url decode | str replace -r -a '[^-.+_?=0-9a-zA-Z]' '-'
-  let sha256 = nix-prefetch-url $redirected_url --name $sanitized_name | str trim
+  let sha256 = nix-prefetch-url $redirected_url --name $sanitized_name e> /dev/null
+
+  if ($sha256 == null) {
+    print -e $"Error prefetching ($redirected_url) \(redirected from ($url)\)"
+  }
 
   {
     path: $joined_path,
@@ -49,7 +53,7 @@ def get-version-data-from-raw-version [ index_name category_name type raw_versio
   | get content 
   | where tag == source 
   | par-each { |raw_source| 
-    get-file-data-from-raw-source $raw_source $type $index_name $category_name 
+    get-file-data-from-raw-source $index_name $category_name $type $raw_source 
   }
 
   {
@@ -94,6 +98,6 @@ def get-all-packages-from-index-url [ index_url ] {
 }
 
 # Using a ReaPack index, generate a JSON database of files with hashes needed to repackage the index for nix
-def main [ index_url:string ] {
+def main [ index_url ] {
   get-all-packages-from-index-url $index_url
 }
