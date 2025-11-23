@@ -17,7 +17,6 @@
     nix-utils,
   }:
     flake-utils.lib.eachDefaultSystem (system: let
-      pkgs = import nixpkgs {inherit system;};
       utils = nix-utils.legacyPackages.${system};
       generate-reapkgs-package = utils.writeNuScriptBin "generate-reapkgs" (builtins.readFile ./generate-reapkgs.nu);
     in {
@@ -25,6 +24,50 @@
       defaultPackage = generate-reapkgs-package;
       legacyPackages.${system} = {
         generate-reapkgs = generate-reapkgs-package;
+      };
+      lib = let 
+        mkReaPackPackage = {
+          pkgs,
+          name,
+          entry,
+          version ? "latest",
+        }: let
+          files = entry.${version};
+
+          installFile = file: let
+            source = pkgs.fetchurl {
+              inherit (file) url sha256;
+            };
+            target = "$out/${file.path}";
+          in ''
+            mkdir -p "$(dirname "${target}")"
+            ln -s "${source}" "${target}"
+          '';
+
+          installCommands = builtins.map installFile files;
+        in
+          pkgs.stdenv.mkDerivation {
+            name = pkgs.lib.strings.sanitizeDerivationName name;
+            inherit version;
+
+            dontUnpack = true;
+
+            installPhase = ''
+              mkdir -p $out
+              ${builtins.concatStringsSep "\n" installCommands}
+            '';
+          };
+      in {
+        inherit mkReaPackPackage;
+        mkReaPackIndex = { pkgs, jsonPath }:
+          let
+            entries = builtins.fromJSON (builtins.readFile jsonPath);
+
+            buildEntry = name: entry: mkReaPackPackage {
+              inherit pkgs name entry;
+            };
+          in
+            pkgs.lib.mapAttrs buildEntry entries;
       };
     });
 }

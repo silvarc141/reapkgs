@@ -25,15 +25,17 @@ def prefetch-file-item [] {
 
   let prefetch_result = nix-prefetch-url $redirected_url --name $sanitized_name | complete
 
+  mut output = ""
+
   if ($prefetch_result.exit_code != 0 or $prefetch_result.stdout == "") {
     print -e $"Error prefetching ($redirected_url)"
   } else {
-    print -e $"Successfully prefetched ($redirected_url)"
+    $output = $prefetch_result.stdout | str trim
   }
 
   $item | merge {
     redirected_url: $redirected_url,
-    sha256: $prefetch_result.stdout
+    sha256: $output
   }
 }
 
@@ -109,17 +111,13 @@ def create-structure [ ] {
         | reject time
       )
 
-      let versions_hashset = ($sorted_versions
-        | each { |v| { key: $v.version_name, val: $v.files } } 
-        | transpose -r -d
-      )
-
       {
         key: $package_row.package_name,
-        val: {
-          latest: ($sorted_versions | first).files,
-          versions: $versions_hashset
-        }
+        val: ($sorted_versions
+          | each { |v| { key: $v.version_name, val: $v.files } } 
+          | prepend { key: "latest", val: ($sorted_versions | first).files }
+          | transpose -r -d
+        )
       }
     }
   } 
