@@ -68,16 +68,15 @@
     // flake-utils.lib.eachDefaultSystem (system: let
       utils = nix-utils.legacyPackages.${system};
       pkgs = nixpkgs.legacyPackages.${system};
-
-      generate-reapkgs-no-deps = utils.writeNuScriptBin "generate-reapkgs" (builtins.readFile ./generate-reapkgs.nu);
-
       generate-reapkgs = pkgs.writeShellApplication {
         name = "generate-reapkgs";
         runtimeInputs = [
           pkgs.curl
           pkgs.nix
         ];
-        text = ''${pkgs.lib.getExe generate-reapkgs-no-deps} "$@"'';
+        text = let 
+          script = utils.writeNuScriptBin "generate-reapkgs" (builtins.readFile ./generate-reapkgs.nu);
+        in ''${pkgs.lib.getExe script} "$@"'';
       };
     in {
       formatter = pkgs.alejandra;
