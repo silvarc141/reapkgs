@@ -1,4 +1,7 @@
 >[!Warning]
+>This README is outdated, from before nu rewrite
+
+>[!Warning]
 >Unstable software, attribute names and options are subject to change
 
 # reapkgs
