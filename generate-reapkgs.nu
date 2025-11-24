@@ -104,7 +104,7 @@ def create-structure [ ] {
           {
             version_name: $version_row.version_name,
             time: $version_meta.version_time,
-            files: ($version_row.files | select path url sha256)
+            files: ($version_row.files | select path url sha256 | sort-by path)
           }
         }
         | sort-by --reverse time
