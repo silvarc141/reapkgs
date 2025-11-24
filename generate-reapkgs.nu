@@ -44,21 +44,21 @@ def generate-flat-worklist [ ] {
   let index_name = $raw_index.attributes.name
 
   $raw_index.content | each { |raw_category|
-    let category_name = $raw_category | get -i attributes.name
+    let category_name = $raw_category | get -o attributes.name
 
     $raw_category.content | each { |raw_package|
-      let package_name = $raw_package | get -i attributes.name
-      let package_type = $raw_package | get -i attributes.type
-      let package_description = $raw_package | get -i attributes.desc
+      let package_name = $raw_package | get -o attributes.name
+      let package_type = $raw_package | get -o attributes.type
+      let package_description = $raw_package | get -o attributes.desc
 
       $raw_package | get content | where tag == version | each { |raw_version|
-        let version_name = $raw_version | get -i attributes.name
+        let version_name = $raw_version | get -o attributes.name
         let version_time = ($raw_version | get attributes.time | into datetime)
-        let version_author = $raw_version | get -i attributes.author
+        let version_author = $raw_version | get -o attributes.author
 
         $raw_version | get content | where tag == source | each { |raw_source|
-          let raw_explicit_path = $raw_source | get -i attributes.file
-          let url = $raw_source | get -i content.content.0
+          let raw_explicit_path = $raw_source | get -o attributes.file
+          let url = $raw_source | get -o content.content.0
 
           let relative_path = if $raw_explicit_path == null {
             $url | path basename | url decode
