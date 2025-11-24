@@ -9,7 +9,7 @@ let TYPE_TO_PATH = {
   extension: "UserPlugins",
   theme: "ColorThemes",
   langpack: "LangPack",
-  "web-interface": "reaper_www_root",
+  "webinterface": "reaper_www_root",
   "project-template": "ProjectTemplates",
   "track-template": "TrackTemplates",
   "midi-note-names": "MIDINoteNames",
