@@ -56,7 +56,7 @@
 
           dontUnpack = true;
 
-          passthru = {version = version: mkReaPackPackage {inherit pkgs name entry version;};};
+          passthru = {version = version: mkReaPackPackage {inherit name entry version;};};
 
           installPhase = ''
             mkdir -p $out
@@ -66,7 +66,7 @@
 
       mkReaPackIndex = jsonPath: let
         entries = builtins.fromJSON (builtins.readFile jsonPath);
-        buildEntry = name: entry: mkReaPackPackage {inherit pkgs name entry;};
+        buildEntry = name: entry: mkReaPackPackage {inherit name entry;};
       in
         pkgs.lib.mapAttrs buildEntry entries;
     in {
