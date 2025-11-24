@@ -36,7 +36,7 @@
         entry,
         version ? "latest",
       }: let
-        files = entry.${version};
+        files = entry.${version} or (throw "Version '${version}' not found for '${name}'. Available: ${toString (builtins.attrNames entry)}");
 
         installFile = file: let
           source = pkgs.fetchurl {
@@ -56,6 +56,8 @@
 
           dontUnpack = true;
 
+          passthru = {version = version: mkReaPackPackage {inherit pkgs name entry version;};};
+
           installPhase = ''
             mkdir -p $out
             ${builtins.concatStringsSep "\n" installCommands}
@@ -67,7 +69,6 @@
         buildEntry = name: entry: mkReaPackPackage {inherit pkgs name entry;};
       in
         pkgs.lib.mapAttrs buildEntry entries;
-
     in {
       formatter = pkgs.alejandra;
       packages.default = generate-reapkgs;
