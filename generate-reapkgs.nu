@@ -97,7 +97,6 @@ def create-structure [ ] {
     $category_row.packages
     | group-by package_name 
     | transpose package_name versions
-    | sort-by package_name
     | each { |package_row|
       let sorted_versions = ($package_row.versions
         | group-by version_name 
@@ -125,6 +124,7 @@ def create-structure [ ] {
       }
     }
   } 
+  | sort-by key
   | flatten 
   | transpose -r -d 
 }
