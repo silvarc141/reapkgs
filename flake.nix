@@ -4,20 +4,14 @@
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
-    nix-utils = {
-      url = "github:silvarc141/nix-utils";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs = {
     self,
     flake-utils,
     nixpkgs,
-    nix-utils,
   }:
     flake-utils.lib.eachDefaultSystem (system: let
-      utils = nix-utils.legacyPackages.${system};
       pkgs = nixpkgs.legacyPackages.${system};
 
       generate-reapkgs = pkgs.writeShellApplication {
@@ -27,7 +21,7 @@
           pkgs.nix
         ];
         text = let
-          script = utils.writeNuScriptBin "generate-reapkgs" (builtins.readFile ./generate-reapkgs.nu);
+          script = pkgs.writers.writeNuBin "generate-reapkgs" (builtins.readFile ./generate-reapkgs.nu);
         in ''${pkgs.lib.getExe script} "$@"'';
       };
 
