@@ -39,7 +39,7 @@
           target = "$out/${file.path}";
         in ''
           mkdir -p "$(dirname "${target}")"
-          ln -s "${source}" "${target}"
+          ln -sf "${source}" "${target}"
         '';
 
         installCommands = builtins.map installFile files;
