@@ -91,13 +91,17 @@ def generate-flat-worklist [ ] {
 
 def create-structure [ ] {
   $in 
-  | group-by category | transpose category packages
+  | group-by category 
+  | transpose category packages
   | each { |category_row|
     $category_row.packages
-    | group-by package_name | transpose package_name versions
+    | group-by package_name 
+    | transpose package_name versions
+    | sort-by package_name
     | each { |package_row|
       let sorted_versions = ($package_row.versions
-        | group-by version_name | transpose version_name files
+        | group-by version_name 
+        | transpose version_name files
         | each { |version_row|
           let version_meta = ($version_row.files | first)
 
