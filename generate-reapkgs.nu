@@ -28,7 +28,7 @@ def prefetch-file-item [] {
   mut output = ""
 
   if ($prefetch_result.exit_code != 0 or $prefetch_result.stdout == "") {
-    print -e $"Error prefetching ($redirected_url)"
+    print -e $"Error prefetching: ($redirected_url) Redirected from: ($url)"
   } else {
     $output = $prefetch_result.stdout | str trim
   }
@@ -53,7 +53,7 @@ def generate-flat-worklist [ ] {
 
       $raw_package | get content | where tag == version | each { |raw_version|
         let version_name = $raw_version | get -o attributes.name
-        let version_time = ($raw_version | get -o attributes.time | into datetime)
+        let version_time = $raw_version | get -o attributes.time | into datetime
         let version_author = $raw_version | get -o attributes.author
 
         $raw_version | get content | where tag == source | each { |raw_source|
