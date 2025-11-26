@@ -32,30 +32,23 @@
       }: let
         files = entry.${version} or (throw "Version '${version}' not found for '${name}'. Available: ${toString (builtins.attrNames entry)}");
 
-        installFile = file: let
-          source = pkgs.fetchurl {
-            inherit (file) url sha256;
-          };
-          target = "$out/${file.path}";
-        in ''
-          mkdir -p "$(dirname "${target}")"
-          ln -sf "${source}" "${target}"
-        '';
+        linkFarmEntries =
+          builtins.map (file: {
+            name = file.path;
+            path = pkgs.fetchurl {
+              inherit (file) url sha256;
+            };
+          })
+          files;
 
-        installCommands = builtins.map installFile files;
+        drv = pkgs.linkFarm (pkgs.lib.strings.sanitizeDerivationName name) linkFarmEntries;
       in
-        pkgs.stdenv.mkDerivation {
-          name = pkgs.lib.strings.sanitizeDerivationName name;
+        drv
+        // {
           inherit version;
-
-          dontUnpack = true;
-
-          passthru = {version = version: mkReaPackPackage {inherit name entry version;};};
-
-          installPhase = ''
-            mkdir -p $out
-            ${builtins.concatStringsSep "\n" installCommands}
-          '';
+          passthru = {
+            version = version: mkReaPackPackage {inherit name entry version;};
+          };
         };
 
       mkReaPackIndex = jsonPath: let
